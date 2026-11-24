@@ -1,0 +1,15 @@
+Pocket Pix model weights
+
+Copyright (c) 2026 The Pocket Pix authors
+
+The trained model weights in this repository (img/remote/night/b16C.pt, b16O.pt, u32M.pt and u64M.pt with their
+.json configurations and words.json), the cartridge model file built from them (build/pix.bin), and the copies of
+those weights inside build/pocketpix.gba and the browser version (img/web/pocketpix-web.zip) are licensed under the
+Creative Commons Attribution 4.0 International License. To view a copy of this license, visit
+https://creativecommons.org/licenses/by/4.0/
+
+The models were trained on photographs published under Creative Commons Attribution licences (CommonCatalog CC-BY
+and Open Images V7). No photograph is included. See CREDITS.md for the training data, its licences and the
+per-photo credits.
+
+The program code is licensed separately under the MIT License (see LICENSE).

@@ -1,0 +1,520 @@
+<title>PocketPix</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: screen on the left (the 64x64 picture, large and pixelated), controls on the right; stacks on a phone.
+   No outside fonts or scripts: the page must work offline and inside an embed of any size. */
+:root{--bg:#eceee9;--fg:#1a1f22;--mute:#5a646a;--line:#cfd5d0;--panel:#f7f8f5;--shell:#2a2f3a;--screen:#0c0e13;--accent:#1f6f8b;--accentfg:#ffffff;--warn:#a2581b;--ok:#2e7d4f;--tint:#dcebf0;
+--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14171a;--fg:#e3e7e5;--mute:#96a1a6;--line:#2f353a;--panel:#1c2125;--shell:#262b35;--screen:#07090c;--accent:#62b3d3;--accentfg:#0b1a21;--warn:#e09a55;--ok:#63c088;--tint:#1d3038;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171a;--fg:#e3e7e5;--mute:#96a1a6;--line:#2f353a;--panel:#1c2125;--shell:#262b35;--screen:#07090c;--accent:#62b3d3;--accentfg:#0b1a21;--warn:#e09a55;--ok:#63c088;--tint:#1d3038;color-scheme:dark}
+html{-webkit-text-size-adjust:100%}
+html,body{margin:0}
+/* inside a fixed-size embed whose own scrolling may be switched off (itch.io), the page scrolls inside itself */
+html.fill,html.fill body{height:100%;overflow:hidden}
+html.fill .scroll{height:100%;overflow-y:auto;overscroll-behavior:contain}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans)}
+.wrap{max-width:980px;margin:0 auto;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:24px}
+header{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+h1{font:600 24px/1.2 var(--mono);margin:0}
+.sub{color:var(--mute);margin:4px 0 0;max-width:68ch}
+.main{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:760px){.main{grid-template-columns:minmax(0,1fr)}}
+.shell{background:var(--shell);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.screen{background:var(--screen);border-radius:4px;padding:10px;display:flex;justify-content:center;position:relative}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font:500 14px/1.5 var(--mono);color:#c7d0d8}
+canvas{display:block;width:256px;height:256px;image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:pixelated}
+.stat{font:500 12.5px var(--mono);color:#c7d0d8;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;min-height:1.5em}
+.bar{height:4px;background:#00000055;border-radius:2px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:#62b3d3}
+.save{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font:500 12.5px var(--mono);color:#c7d0d8}
+.save button{background:transparent;color:#c7d0d8;border-color:#ffffff33;padding:4px 9px;font-size:12.5px}
+.save button:hover{border-color:#62b3d3}
+.shell button:focus-visible{outline-color:#62b3d3}
+.save button:disabled{opacity:.45;cursor:default;border-color:#ffffff33}
+.ctl{display:flex;flex-direction:column;gap:16px;min-width:0}
+label.t,.t{font:500 12px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mute);display:block;margin-bottom:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=search]{flex:1 1 200px;min-width:0;font:500 16px var(--mono);padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
+button{font:500 14px var(--mono);border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:8px 12px;border-radius:6px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.go{background:var(--accent);color:var(--accentfg);border-color:var(--accent);font-weight:600;padding:10px 18px}
+button.chip{padding:4px 10px;font-size:13px;border-radius:99px}
+button.quiet{padding:4px 10px;font-size:12.5px;color:var(--mute)}
+button.link{border:0;background:transparent;padding:2px 0;font:13.5px var(--sans);color:var(--accent);text-decoration:underline;text-align:left}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;border-radius:0;background:transparent;padding:7px 11px}
+.seg button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.hint{font-size:13.5px;color:var(--mute)}
+.words{font:13px/1.9 var(--mono);color:var(--mute);min-height:1.9em;margin-top:6px}
+.words s{opacity:.75;text-decoration-color:var(--warn)}.words b{color:var(--fg);font-weight:500}
+.words .ign{color:var(--warn);font-size:12px}
+.words button{padding:1px 8px;font-size:12.5px;border-radius:99px;border-color:var(--accent);color:var(--accent);background:transparent}
+.notice{font-size:14px;padding:10px 12px;border-left:3px solid var(--warn);background:var(--panel)}
+.notice code{font:13px var(--mono)}
+.sl{display:flex;align-items:center;gap:10px;font:13px var(--mono)}
+input[type=range]{flex:1;min-width:80px;accent-color:var(--accent)}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;margin:0}
+details.set>summary{font:500 12px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mute);cursor:pointer}
+details.set>div{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+/* the dictionary */
+.dict{display:flex;flex-direction:column;gap:10px}
+.pick{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pick .t{margin:0}.pick .pp{font:500 14px var(--mono);flex:1 1 140px;min-width:0;overflow-wrap:anywhere}.pick .pp.none{color:var(--mute);font-weight:400}
+.pick .msg{flex:1 1 100%;color:var(--warn);font-size:13.5px}
+.dict .count{font:13px var(--mono);color:var(--mute);margin-left:auto}
+.az{display:flex;flex-wrap:wrap;gap:2px}
+.az button{padding:3px 0;width:27px;font-size:13px;border-color:transparent;background:transparent;text-transform:uppercase}
+.az button.wide{width:auto;padding:3px 8px;text-transform:none}
+.az button:hover{border-color:var(--accent)}
+.az button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.wl{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start}
+.list{max-height:236px;overflow-y:auto;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--panel)}
+button.w{padding:2px 9px;font-size:13.5px;border-radius:99px;background:var(--bg)}
+button.w.col{border-color:var(--accent);background:var(--tint)}
+button.w i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;border:1px solid #80808088;vertical-align:-1px}
+button.w[aria-pressed=true]{background:var(--accent);color:var(--accentfg);border-color:var(--accent)}
+.more{align-self:flex-start}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,128px);gap:14px}
+.gal figure{margin:0;display:flex;flex-direction:column;gap:4px;width:128px}
+.gal img{width:128px;height:128px;image-rendering:pixelated;border-radius:3px;background:var(--screen);display:block}
+.gal figcaption{font:11.5px/1.3 var(--mono);color:var(--mute);overflow-wrap:anywhere}
+.gal .row{gap:4px}
+.gal button{padding:2px 7px;font-size:11.5px}
+.note{color:var(--mute);font-size:13.5px;max-width:72ch;margin:0}
+.about p{max-width:72ch;margin:0 0 10px}
+h2{font:600 15px var(--mono);margin:0 0 10px}
+a{color:var(--accent)}
+@media (pointer:coarse){
+.wl{gap:8px}button.w{min-height:34px;padding:4px 12px}
+.az{gap:6px}.az button{width:34px;min-height:34px}.az button.wide{min-width:44px}
+.gal button,.save button,button.quiet,.words button,button.link{min-height:34px}.gal button{padding:4px 10px}
+input[type=checkbox]{width:20px;height:20px}.chk{padding:6px 0}.list{max-height:300px}
+}
+[hidden]{display:none!important}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+</style>
+<div class="scroll" id="scroll"><div class="wrap">
+<header><div><h1>PocketPix</h1>
+<p class="sub">A photo model small enough for a Game Boy Advance cartridge, running here in your browser. Type a word or two and it paints a 64×64 picture, pixel by pixel.</p></div>
+<button type="button" class="quiet" id="theme" aria-label="Switch between light and dark">Theme</button></header>
+<div class="notice" id="notice" role="alert" hidden></div>
+<div class="main">
+<div class="shell">
+<div class="screen" id="screen"><canvas id="cv" width="64" height="64" role="img" aria-label="The picture being painted"></canvas><div class="empty" id="empty">Press Paint, or pick an example.</div></div>
+<div class="bar"><i id="bar"></i></div>
+<div class="stat" aria-live="polite"><span id="stage">Ready. Nothing is downloaded yet.</span><span id="time"></span></div>
+<div class="save"><span>Save PNG</span><button type="button" data-save="1" disabled>64 px</button><button type="button" data-save="4" disabled>256 px</button><button type="button" data-save="8" disabled>512 px</button></div>
+</div>
+<div class="ctl">
+<div><label class="t" for="prompt">Prompt (leave empty for a surprise)</label>
+<div class="row"><input type="text" id="prompt" maxlength="200" placeholder="car red" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="words"><button class="go" id="go" type="button">Paint</button></div>
+<div class="words" id="words" aria-live="polite"></div>
+<button type="button" class="link" id="browse"></button></div>
+<div><span class="t" id="modet">What kind of picture</span><div class="row"><div class="seg" id="mode" role="group" aria-labelledby="modet"></div><span class="hint" id="modehint"></span></div></div>
+<div><span class="t">Try</span><div class="row" id="ex"></div></div>
+<div class="row"><label class="chk"><input type="checkbox" id="slow"> Paint at Game Boy Advance speed</label><button type="button" class="quiet" id="skip" hidden>Show the rest now</button></div>
+<details class="set"><summary>Settings (set as on the cartridge)</summary><div>
+<div><span class="t">How hard the prompt pulls</span><div class="sl"><input type="range" id="guide" min="1" max="5" step="0.5" value="3" aria-label="Prompt strength"><span id="guidev">3</span></div></div>
+<div><span class="t">Variety in the first pass</span><div class="sl"><input type="range" id="temp" min="0.6" max="1.1" step="0.05" value="0.9" aria-label="Variety"><span id="tempv">0.9</span></div></div>
+<div class="row"><button type="button" class="quiet" id="reset">Back to the cartridge's settings</button></div>
+</div></details>
+</div>
+</div>
+
+<section class="dict" id="dict" aria-labelledby="dicth">
+<h2 id="dicth" style="margin:0">Words the model knows</h2>
+<div class="pick"><span class="t">Prompt</span><span class="pp" id="pp"></span><button class="go" id="go2" type="button">Paint</button><span class="msg" id="pmsg" role="status" hidden></span></div>
+<p class="note">The model only understands these <span id="nwords"></span> words; anything else in a prompt is ignored. Click a word to add it to the prompt, click again to take it out. Up to 8 words count.</p>
+<div><span class="t" id="colt">Colour words</span><div class="wl" id="cols" role="group" aria-labelledby="colt"></div></div>
+<div class="row"><label class="vh" for="q">Search the words</label><input type="search" id="q" placeholder="Search the words" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30">
+<div class="seg" id="order" role="group" aria-label="Order"></div><span class="count" id="count" aria-live="polite"></span></div>
+<div class="az" id="az" role="group" aria-label="First letter"></div>
+<div class="list"><div class="wl" id="list" role="group" aria-label="Words"></div></div>
+<button type="button" class="quiet more" id="more" hidden></button>
+</section>
+
+<section><h2>Painted so far</h2><div class="gal" id="gal"></div><p class="note" id="galnote">Finished pictures collect here. Each can be saved as a PNG at its real size (64 px) or enlarged 8 times with hard pixel edges.</p></section>
+
+<section class="about"><h2>What is this?</h2>
+<p>PocketPix is a text-to-picture model made to fit on a Game Boy Advance cartridge and run on its 16.8 MHz processor. The first-pass model has about 2 million weights; it lays out a 16×16 picture one pixel at a time. Two enlarger models (about 10 million weights each) then repaint it at 32×32 and at 64×64. All the models together take about 25 MB of the cartridge. Every pixel is one of 256 fixed colours.</p>
+<p>What to expect: small, blurry, impressionistic pictures. It is best with one thing and a colour, such as <i>car red</i> or <i>flower yellow</i>; it is poor at counting, at text, at faces in detail and at anything needing several things arranged in a particular way. It knows about four thousand words and ignores the rest. Without a prompt it paints whatever it likes.</p>
+<p>This page runs the cartridge's own picture engine, the same C code with the same models and settings, compiled for the browser, so it works in whole numbers exactly as the cartridge does. Here a picture takes well under a second; on the cartridge it takes <span id="abtime"></span>, <span id="abhow"></span>. Nothing you type leaves your browser.</p>
+<p id="lic">The models were trained on CC BY photographs from CommonCatalog (the CC-BY subset, from the CommonCanvas project) and on close-up crops from Open Images V7 (photographs CC BY 2.0, object boxes CC BY 4.0). <span id="liclinks"></span> No photograph is included here. Game Boy Advance is a trademark of Nintendo; this is an unofficial hobby project, not made or endorsed by Nintendo.</p>
+</section>
+</div></div>
+<script id="engine">
+/*ENGINE*/
+</script>
+<script>
+(function(){
+'use strict';
+const WORDS = /*WORDS*/, PAL = /*PAL*/, FILES = /*FILES*/, CFG = /*CFG*/;
+/* Cartridge timings: injected from img/web/gba_times.json, the one place to update them. */
+const GBA = /*GBA*/;
+/* The cartridge's fixed choices. Guidance applies to the first pass only, and only to its first 11/16 of cells. */
+const CART = { guide: 3.0, guideFrac: 11 / 16, temps: [0.9, 0.7, 0.7], enlargers: ['u32M', 'u64M'], maxWords: 8 };
+const MODES = [['b16C', 'Objects', 'One thing, close up.'], ['b16O', 'Scenes', 'Landscapes, streets, rooms.']];
+const EXAMPLES = { b16C: ['', 'car red', 'flower yellow', 'dog white', 'cat black', 'bird blue', 'horse', 'apple green', 'chair', 'boat'],
+                   b16O: ['', 'sunset', 'beach', 'mountain snow', 'city night', 'field green', 'forest', 'street', 'sky clouds'] };
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const COLOURS = new Set('white black red blue green yellow orange brown pink purple grey gray silver gold golden dark bright light beige'.split(' '));   // as on the cartridge
+const SWATCH = { white: '#f4f4f0', black: '#111', red: '#c8312b', blue: '#2c62c9', green: '#3c8f3f', yellow: '#e8cf3a', orange: '#e6862a', brown: '#7a5233', pink: '#e79ab8', purple: '#7b4aa8', grey: '#8a8d8f', gray: '#8a8d8f',
+  silver: '#c3c7cb', gold: '#c9a227', golden: '#d4a934', dark: '#2b2b33', bright: '#fff6c2', light: '#e9e6da', beige: '#d8c8a8' };
+const ix = new Map(WORDS.map((w, i) => [w, i]));
+const NREAL = WORDS.length - 2;                         // [0] is the empty slot, [1] stands for every unknown word
+let base = 'b16C', runId = 0, askId = 0, queue = [], shown = 0, total = 0, pace = null, stats = null, busy = false;
+const cv = $('cv'), cx = cv.getContext('2d'); cx.fillStyle = '#0c0e13'; cx.fillRect(0, 0, 64, 64);
+
+/* ---------- theme, picture size ---------- */
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+{ const t = store.get('pocketpix-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; }
+$('theme').onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), nxt = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = nxt; store.set('pocketpix-theme', nxt);
+};
+function fit() {                        // a whole number of screen pixels per picture pixel, as large as fits
+  if (!$('screen')) return;
+  const w = $('screen').clientWidth - 20, h = window.innerHeight - 250;
+  const s = Math.max(2, Math.min(8, Math.floor(w / 64), Math.max(3, Math.floor(h / 64))));
+  const dpr = window.devicePixelRatio || 1, n = Math.max(1, Math.floor(s * dpr + 1e-6));      // whole device pixels too, at 125% or 150% scaling
+  cv.style.width = cv.style.height = n * 64 / dpr + 'px';
+}
+fit(); addEventListener('resize', fit);
+if (window.ResizeObserver) new ResizeObserver(fit).observe($('screen'));
+
+/* ---------- prompt ---------- */
+function tokens() { return $('prompt').value.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean); }      // an accented or non-Latin word stays one (unknown) word
+function parse() {
+  const raw = tokens(), known = [], out = [];
+  for (const w of raw) {
+    const i = ix.get(w); let st = 'ok';
+    if (!(i > 1)) st = 'unknown'; else if (known.includes(i)) st = 'twice'; else if (known.length >= CART.maxWords) st = 'over'; else known.push(i);
+    out.push([w, st]);
+  }
+  known.sort((a, b) => COLOURS.has(WORDS[a]) - COLOURS.has(WORDS[b]));      // the subject first, colours after, as in training
+  return { ids: known, shown: out };
+}
+function near(a, b) {                   // one letter changed, added, dropped, or two neighbours swapped
+  const la = a.length, lb = b.length; if (Math.abs(la - lb) > 1) return false;
+  let i = 0; while (i < la && i < lb && a[i] === b[i]) i++;
+  if (la === lb) return a.slice(i + 1) === b.slice(i + 1) || (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2));
+  return la > lb ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+}
+function suggest(w) {                   // close dictionary words: near misses and shorter forms first, then completions; common words first
+  const out = [];
+  for (let i = 2; i < WORDS.length; i++) {
+    const d = WORDS[i]; let s = -1;
+    if (w.length >= 3 && near(w, d)) s = 0;
+    else if (d.length >= 3 && w.startsWith(d) && w.length - d.length <= 3) s = 0;
+    else if (w.length >= 2 && d.startsWith(w)) s = 1;
+    if (s >= 0) out.push([s, i]);
+  }
+  return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 4).map(x => WORDS[x[1]]);
+}
+function setPrompt(list) { $('prompt').value = list.join(' '); refresh(); }
+function say(text) { $('pmsg').textContent = text; $('pmsg').hidden = !text; }
+function toggleWord(w) {
+  const t = tokens();
+  if (t.includes(w)) { setPrompt(t.filter(x => x !== w)); return; }
+  if (parse().ids.length >= CART.maxWords) { say(`The prompt already has ${CART.maxWords} words, which is all the model reads. Take one out first.`); return; }
+  setPrompt(t.concat(w));
+}
+const LABEL = { unknown: 'not a word the model knows; ignored', twice: 'already in the prompt; ignored', over: 'more than 8 words; ignored' };
+function showWords(p) {
+  const box = $('words'); box.textContent = '';
+  if (!p.shown.length) { box.textContent = 'No prompt: the model paints whatever it likes.'; return; }
+  p.shown.forEach(([w, st], k) => {
+    if (k) box.append(' ');
+    if (st === 'ok') { box.append(el('b', null, w)); return; }
+    const s = el('s', null, w); s.title = LABEL[st]; box.append(s, ' ');
+    if (st !== 'unknown') { box.append(el('span', 'ign', st === 'twice' ? '(repeated)' : '(over 8 words)')); return; }
+    const sug = suggest(w).filter(x => !p.shown.some(y => y[0] === x));
+    box.append(el('span', 'ign', sug.length ? '(ignored) try' : '(ignored: not a word the model knows)'));
+    for (const x of sug) { const b = el('button', null, x); b.type = 'button'; b.dataset.fix = k; b.dataset.to = x; b.setAttribute('aria-label', `Replace ${w} with ${x}`); box.append(' ', b); }
+  });
+}
+$('words').addEventListener('click', e => {
+  const b = e.target.closest('button[data-fix]'); if (!b) return;
+  const t = tokens(); t[+b.dataset.fix] = b.dataset.to; setPrompt(t); $('prompt').focus();
+});
+
+/* ---------- cartridge times ---------- */
+function mmss(s) { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function estimate(p) {
+  const twice = p.ids.length > 0 && +$('guide').value !== 1, T = GBA.pass_s;
+  return { stages: [twice ? T.first_with_prompt : T.first_no_prompt, T.to_32, T.to_64], total: twice ? GBA.total_s.with_prompt : GBA.total_s.no_prompt };
+}
+function chain() { return ['pix0', 'pix1']; }          /* the cartridge's model file, in two halves: every mode needs both */
+function isCart() { return +$('guide').value === CART.guide && +$('temp').value === CART.temps[0]; }
+function refresh() {
+  const p = parse(); showWords(p);
+  const ok = p.shown.filter(x => x[1] === 'ok').map(x => x[0]);
+  $('pp').textContent = ok.length ? ok.join(' ') : '(empty: a surprise)'; $('pp').className = 'pp' + (ok.length ? '' : ' none'); say('');
+  $('guidev').textContent = (+$('guide').value).toFixed(1); $('tempv').textContent = (+$('temp').value).toFixed(2);
+  markDict(p);
+}
+for (const id of ['prompt', 'guide', 'temp']) $(id).addEventListener('input', refresh);
+$('prompt').addEventListener('keydown', e => { if (e.key === 'Enter') paint(); });
+$('go').onclick = $('go2').onclick = paint;
+$('browse').textContent = `It knows ${NREAL.toLocaleString('en')} words: browse them`;
+$('browse').onclick = () => { $('dict').scrollIntoView({ block: 'start' }); $('q').focus({ preventScroll: true }); };
+if (CFG.target === 'itch') document.documentElement.classList.add('fill');
+$('reset').onclick = () => { $('guide').value = CART.guide; $('temp').value = CART.temps[0]; refresh(); };
+$('abtime').textContent = `about ${mmss(GBA.total_s.with_prompt)}`; $('abhow').textContent = `measured in ${GBA.measured_in}`;
+$('nwords').textContent = NREAL.toLocaleString('en');
+if (CFG.credits) {
+  const s = $('liclinks'); s.append('Full credits: ');
+  CFG.credits.forEach(([href, text], k) => { const a = el('a', null, text); a.href = href; a.target = '_blank'; a.rel = 'noopener'; s.append(k ? ' and ' : '', a); });
+  s.append('.');
+}
+
+function seg(box, items, get, set) {
+  for (const [v, label] of items) {
+    const b = el('button', null, label); b.type = 'button'; b.setAttribute('aria-pressed', v === get());
+    b.onclick = () => { set(v); for (const o of box.children) o.setAttribute('aria-pressed', o === b); };
+    box.appendChild(b);
+  }
+}
+function examples() {
+  const box = $('ex'); box.textContent = '';
+  for (const e of EXAMPLES[base]) { const b = el('button', 'chip', e || '(surprise)'); b.type = 'button'; b.onclick = () => { $('prompt').value = e; refresh(); paint(); }; box.appendChild(b); }
+  $('modehint').textContent = MODES.find(m => m[0] === base)[2];
+}
+seg($('mode'), MODES, () => base, v => { base = v; examples(); refresh(); });
+
+/* ---------- the dictionary: at most a few hundred buttons exist at a time, one click handler for all ---------- */
+const D = { q: '', bad: false, order: 'freq', letter: '', limit: 300, page: 300 };
+const byAZ = []; for (let i = 2; i < WORDS.length; i++) byAZ.push(i); byAZ.sort((a, b) => WORDS[a] < WORDS[b] ? -1 : 1);
+const rankAZ = new Int32Array(WORDS.length); byAZ.forEach((i, k) => rankAZ[i] = k);
+function wordButton(i) {
+  const w = WORDS[i], b = el('button', 'w' + (COLOURS.has(w) ? ' col' : '')); b.type = 'button'; b.dataset.w = w; b.tabIndex = -1;
+  if (SWATCH[w] && COLOURS.has(w)) { const d = el('i'); d.style.background = SWATCH[w]; b.append(d); }
+  b.append(w); return b;
+}
+function dictMatches() {
+  const q = D.q, L = D.letter, out = [];
+  if (D.bad) return out;                                 // the search box holds something no word can contain
+  for (const i of byAZ) {
+    const w = WORDS[i];
+    if (L && (L === '#' ? !(w[0] >= '0' && w[0] <= '9') : w[0] !== L)) continue;
+    if (q && !w.includes(q)) continue;
+    out.push(i);
+  }
+  const key = D.order === 'freq' ? (i => i) : (i => rankAZ[i]);
+  out.sort((a, b) => (q ? WORDS[b].startsWith(q) - WORDS[a].startsWith(q) : 0) || key(a) - key(b));      // while searching, words that start with it come first
+  return out;
+}
+function renderDict(keepFocus) {
+  const all = dictMatches(), list = $('list'), frag = document.createDocumentFragment();
+  for (const i of all.slice(0, D.limit)) frag.append(wordButton(i));
+  list.textContent = ''; list.append(frag);
+  if (!all.length) list.append(el('span', 'hint', D.q || D.bad ? `No word contains “${$('q').value.trim()}”.` : 'No words here.'));
+  const first = list.querySelector('button.w'); if (first) first.tabIndex = 0;
+  const filtered = D.q || D.letter || D.bad;
+  $('count').textContent = filtered ? `${all.length.toLocaleString('en')} of ${NREAL.toLocaleString('en')} words` : `${NREAL.toLocaleString('en')} words`;
+  const rest = all.length - D.limit; $('more').hidden = rest <= 0;
+  if (rest > 0) $('more').textContent = `Show ${Math.min(rest, D.page)} more (${rest.toLocaleString('en')} not shown)`;
+  for (const b of $('az').children) b.setAttribute('aria-pressed', b.dataset.l === D.letter);
+  markDict(parse());
+  if (keepFocus != null) { const b = list.children[keepFocus]; if (b && b.focus) { for (const o of list.querySelectorAll('[tabindex="0"]')) o.tabIndex = -1; b.tabIndex = 0; b.focus(); } }
+  else list.parentNode.scrollTop = 0;
+}
+function markDict(p) {
+  const on = new Set(p.shown.filter(x => x[1] === 'ok' || x[1] === 'twice').map(x => x[0]));      // only words the model will read
+  for (const b of $('dict').querySelectorAll('button.w')) b.setAttribute('aria-pressed', on.has(b.dataset.w));
+}
+for (const w of WORDS.slice(2).filter(w => COLOURS.has(w))) { const b = wordButton(ix.get(w)); b.tabIndex = $('cols').children.length ? -1 : 0; $('cols').append(b); }
+{ const az = $('az'), mk = (l, text, wide) => { const b = el('button', wide ? 'wide' : null, text); b.type = 'button'; b.dataset.l = l; b.tabIndex = l ? -1 : 0; if (l && l !== '#') b.setAttribute('aria-label', 'Words starting with ' + l.toUpperCase()); az.append(b); };
+  mk('', 'All', true); for (const l of 'abcdefghijklmnopqrstuvwxyz') mk(l, l); mk('#', '0–9', true); }
+seg($('order'), [['freq', 'Most common first'], ['az', 'A–Z']], () => D.order, v => { D.order = v; D.limit = D.page; renderDict(); });
+$('az').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; D.letter = b.dataset.l; if (D.q || D.bad) { D.q = ''; D.bad = false; $('q').value = ''; } D.limit = D.page; renderDict(); });
+$('q').addEventListener('input', () => {
+  const v = $('q').value.trim().toLowerCase(); D.bad = /[^a-z0-9]/.test(v); D.q = D.bad ? '' : v;      // the words are a-z and 0-9 only
+  if (D.q || D.bad) D.letter = ''; D.limit = D.page; renderDict();
+});
+$('q').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const b = $('list').querySelector('button.w'); if (b && D.q) toggleWord(b.dataset.w); }
+  else if (e.key === 'ArrowDown') { const b = $('list').querySelector('button.w'); if (b) { e.preventDefault(); b.focus(); } }
+});
+$('more').onclick = () => { const at = D.limit; D.limit += D.page; renderDict(at); };
+$('dict').addEventListener('click', e => { const b = e.target.closest('button.w'); if (b) toggleWord(b.dataset.w); });
+function rove(box) {                   // one tab stop for a group of buttons; arrows, Home and End move inside it
+  const stop = b => { for (const o of box.querySelectorAll('button[tabindex="0"]')) o.tabIndex = -1; b.tabIndex = 0; };
+  box.addEventListener('keydown', e => {
+    const b = e.target.closest('button'); if (!b) return; let to = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = b.nextElementSibling;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = b.previousElementSibling;
+    else if (e.key === 'Home') to = box.firstElementChild; else if (e.key === 'End') to = box.lastElementChild;
+    else return;
+    e.preventDefault(); if (!to || !to.matches('button')) return;
+    stop(to); to.focus();
+  });
+  box.addEventListener('focusin', e => { const b = e.target.closest('button'); if (b) stop(b); });
+}
+rove($('list')); rove($('cols')); rove($('az'));
+
+/* ---------- the engine runs in a worker (made from this page's own text, so one file works on any static host) ---------- */
+function notice(parts) { const n = $('notice'); n.textContent = ''; n.append(...parts); n.hidden = false; }
+const FILEHELP = () => ['This page was opened straight from a file, and browsers do not let a page read its model files that way. Put the folder on any web host, or serve it yourself: run ', el('code', null, 'python3 -m http.server'), ' in this folder and open ', el('code', null, 'http://localhost:8000'), '.'];
+if (location.protocol === 'file:') notice(FILEHELP());
+let worker = null;
+try {
+  worker = new Worker(URL.createObjectURL(new Blob([$('engine').textContent, `
+let E = null, current = 0;
+const engine = WebAssembly.instantiate(Uint8Array.from(atob(PIXWASM), c => c.charCodeAt(0)), {}).then(r => { E = r.instance.exports; });
+onmessage = async e => {
+  const d = e.data; await engine;
+  if (d.type === 'model') { new Uint8Array(E.memory.buffer).set(new Uint8Array(d.buf), E.pw_blob() + d.off); return; }
+  const id = current = d.id, mem = E.memory.buffer;
+  E.pw_seed(d.seed);
+  const w = new Uint16Array(mem, E.pw_words(), 8); w.fill(0); d.words.slice(0, 8).forEach((x, i) => { w[i] = x; });
+  for (let k = 0; k < 3; k++) {
+    const m = k ? k : d.base;
+    if (E.pw_begin(m, k ? 256 : d.guideQ8, k ? 366 : d.invT)) { postMessage({ id, error: 'the engine would not start' }); return; }
+    const S = E.pw_size(m), ns = E.pw_ns(m), perm = new Int16Array(mem, E.pw_perm(), S * S), img = new Uint8Array(mem, E.pw_img(), S * S);
+    const t0 = performance.now(); let last = t0, idx = [], val = [], more = 1;
+    while (more) {
+      const c0 = E.pw_done(); more = E.pw_cell(); const c1 = E.pw_done();
+      for (let c = c0; c < c1; c++) for (let j = 0; j < ns; j++) { const i = perm[c * ns + j]; idx.push(i); val.push(img[i]); }
+      if (performance.now() - last > 25 || !more) {
+        postMessage({ id, k, S, idx, val, ms: more ? null : performance.now() - t0 }); idx = []; val = [];
+        await new Promise(r => setTimeout(r)); last = performance.now();
+        if (current !== id) return;
+      }
+    }
+    if (k < 2) new Uint8Array(mem, E.pw_thumb(), S * S).set(img);
+  }
+  postMessage({ id, done: true });
+};`], { type: 'text/javascript' })));
+  worker.onerror = e => { busy = false; $('stage').textContent = 'Something went wrong in the painter: ' + (e.message || 'unknown error'); };
+} catch (err) { notice(['This browser would not start the painter (' + err.message + ').']); }
+
+/* Model files: each is fetched at most once at a time, however often Paint is pressed; a failed one can be retried. */
+const have = {}, loading = {}, got = {}; let wanted = [];
+function showDownload() {
+  if (busy || !wanted.length) return;                    // a picture being painted keeps the status line
+  const all = wanted.reduce((a, n) => a + FILES[n].size, 0), g = wanted.reduce((a, n) => a + (have[n] ? FILES[n].size : got[n] || 0), 0);
+  $('stage').textContent = 'Downloading the model…'; $('bar').style.width = Math.min(100, g / all * 100) + '%';
+  $('time').textContent = (g / 1048576).toFixed(1) + ' of ' + (all / 1048576).toFixed(1) + ' MB';
+}
+async function fetchOne(n) {
+  const F = FILES[n]; got[n] = 0;
+  const r = await fetch(F.url); if (!r.ok) throw new Error(F.url + ': ' + r.status);
+  let buf;
+  if (r.body && r.body.getReader) {
+    const reader = r.body.getReader(), chunks = []; let h = 0;
+    for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); h += value.length; got[n] = Math.min(h, F.size); showDownload(); }
+    buf = new Uint8Array(h); let o = 0; for (const c of chunks) { buf.set(c, o); o += c.length; }
+  } else buf = new Uint8Array(await r.arrayBuffer());
+  let data;
+  if (F.wasm) {                                         // a module that holds nothing but bytes
+    const { instance } = await WebAssembly.instantiate(buf.buffer, {});
+    data = instance.exports.m.buffer.slice(0, F.size);
+  } else data = buf.buffer;
+  if (data.byteLength !== F.size) throw new Error(F.url + ': the file is ' + data.byteLength + ' bytes, expected ' + F.size);
+  worker.postMessage({ type: 'model', name: n, off: F.off, buf: data }, [data]); have[n] = true;
+}
+function need(names) {
+  wanted = names.filter(n => !have[n]); showDownload();
+  return Promise.all(wanted.map(n => loading[n] || (loading[n] = fetchOne(n).finally(() => { delete loading[n]; got[n] = 0; }))));
+}
+
+/* ---------- painting ---------- */
+const NAMES = ['First pass: 16×16 layout', 'Second pass: repainting at 32×32', 'Third pass: repainting at 64×64'];
+const SIZES = [256, 1024, 4096];
+async function paint() {
+  if (!worker) return;
+  const p = parse(), id = ++askId, ch = chain(), e = estimate(p), slow = $('slow').checked, guide = +$('guide').value, temp = +$('temp').value;
+  const cfg = MODES.find(m => m[0] === base)[1] + (isCart() ? '' : ' · own settings');
+  const r = $('screen').getBoundingClientRect();          // pressed from further down the page: bring the picture back into view
+  if (r.top < 0 || r.bottom > window.innerHeight) $('screen').parentNode.scrollIntoView({ block: r.height + 120 > window.innerHeight ? 'start' : 'nearest' });
+  if (!busy) { $('stage').textContent = 'Starting…'; $('time').textContent = ''; }
+  try { await need(ch); }
+  catch (err) {
+    if (id !== askId) return;
+    wanted = [];                                          // files still arriving no longer write to the status line
+    if (!busy) { $('stage').textContent = 'Could not download the model.'; $('bar').style.width = '0'; $('time').textContent = ''; }
+    notice(location.protocol === 'file:' ? FILEHELP() : ['The model files could not be downloaded (' + err.message + '). Check the connection and press Paint again.']);
+    return;
+  }
+  if (id !== askId) return;
+  /* only now does this picture replace the one on screen: a failed download leaves a picture in progress alone */
+  runId = id; queue = []; shown = 0;
+  stats = { id, label: p.ids.map(i => WORDS[i]).join(' ') || '(surprise)', cfg, ms: 0, est: e.total, done: false };
+  if (location.protocol !== 'file:') $('notice').hidden = true;
+  $('bar').style.width = '0'; $('time').textContent = ''; $('empty').hidden = true; total = SIZES[0] + SIZES[1] + SIZES[2];
+  pace = slow ? { t0: performance.now(), stages: e.stages, sum: e.stages[0] + e.stages[1] + e.stages[2] } : null;
+  worker.postMessage({ type: 'draw', id, base: base === 'b16O' ? 3 : 0, words: p.ids, guideQ8: Math.round(guide * 256), invT: Math.round(256 / temp), seed: (Math.random() * 4294967296) >>> 0 });
+  for (const b of document.querySelectorAll('.save button')) b.disabled = true;       // until the picture is finished
+  cv.dataset.label = stats.label; refresh();
+  if (!busy) { busy = true; requestAnimationFrame(tick); }
+}
+$('skip').onclick = () => { pace = null; };
+if (worker) worker.onmessage = e => {
+  const d = e.data; if (d.id !== runId) return;
+  if (d.error) { busy = false; $('stage').textContent = 'Something went wrong in the painter: ' + d.error; return; }
+  if (d.done) { stats.done = true; return; }
+  if (d.ms != null) stats.ms += d.ms;
+  for (let i = 0; i < d.idx.length; i++) queue.push([d.k, d.S, d.idx[i], d.val[i]]);
+};
+function allowed() {                    // how many pixels may be on screen by now
+  if (!pace) return Infinity;
+  let t = (performance.now() - pace.t0) / 1000, n = 0;
+  for (let k = 0; k < 3; k++) { if (t >= pace.stages[k]) { n += SIZES[k]; t -= pace.stages[k]; } else { n += Math.floor(SIZES[k] * t / pace.stages[k]); break; } }
+  return n;
+}
+function tick() {
+  if (pace && !$('slow').checked) pace = null;            // unticking the box, or "Show the rest now", ends the wait: the picture is already computed
+  if (!pace && !$('skip').hidden) { $('skip').hidden = true; $('time').textContent = ''; }
+  if (pace) $('skip').hidden = false;
+  const lim = Math.min(queue.length, allowed()); let k = -1;
+  for (; shown < lim; shown++) {
+    const [st, S, i, v] = queue[shown], f = 64 / S; k = st;
+    cx.fillStyle = `rgb(${PAL[v * 3]},${PAL[v * 3 + 1]},${PAL[v * 3 + 2]})`; cx.fillRect((i % S) * f, Math.floor(i / S) * f, f, f);
+  }
+  if (k >= 0) { $('stage').textContent = NAMES[k]; if (!pace) $('bar').style.width = (shown / total * 100) + '%'; }
+  if (pace) {                                             // at cartridge speed the bar follows the clock, not the pixel count
+    const t = (performance.now() - pace.t0) / 1000; $('bar').style.width = Math.min(100, t / pace.sum * 100) + '%';
+    $('time').textContent = mmss(Math.min(t, stats.est)) + ' of ' + mmss(stats.est);
+  }
+  if (stats.done && shown >= total) {
+    busy = false; pace = null; $('skip').hidden = true; $('stage').textContent = 'Done'; $('bar').style.width = '100%';
+    for (const b of document.querySelectorAll('.save button')) b.disabled = false;
+    $('time').textContent = `here ${Math.round(stats.ms)} ms · cartridge ${mmss(stats.est)}`;
+    document.documentElement.dataset.painted = String(+(document.documentElement.dataset.painted || 0) + 1); document.documentElement.dataset.ms = String(Math.round(stats.ms));
+    addToGallery();
+    return;
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ---------- gallery and saving ---------- */
+function savePNG(src, scale, label) {
+  const c = document.createElement('canvas'); c.width = c.height = 64 * scale;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(src, 0, 0, c.width, c.height);
+  const name = 'pocketpix-' + (label.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'surprise') + '-' + c.width + '.png';
+  c.toBlob(blob => {
+    if (!blob) return;
+    const a = document.createElement('a'), url = URL.createObjectURL(blob); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }, 'image/png');
+}
+document.querySelector('.save').addEventListener('click', e => { const b = e.target.closest('button[data-save]'); if (b) savePNG(cv, +b.dataset.save, cv.dataset.label || ''); });
+function addToGallery() {
+  const f = el('figure'), im = el('img'), c = el('figcaption', null, stats.label + ' · ' + stats.cfg), r = el('div', 'row');
+  im.src = cv.toDataURL('image/png'); im.alt = 'Painted: ' + stats.label; im.width = im.height = 64; im.dataset.label = stats.label;
+  for (const [s, t] of [[1, 'Save'], [8, 'Save ×8']]) { const b = el('button', null, t); b.type = 'button'; b.dataset.save = s; b.setAttribute('aria-label', `${t} (${64 * s} px PNG): ${stats.label}`); r.append(b); }
+  f.append(im, c, r); $('gal').prepend(f); $('galnote').hidden = true;
+  while ($('gal').children.length > 48) $('gal').lastElementChild.remove();
+}
+$('gal').addEventListener('click', e => {
+  const b = e.target.closest('button[data-save]'); if (!b) return;
+  const im = b.closest('figure').querySelector('img'); savePNG(im, +b.dataset.save, im.dataset.label);
+});
+
+examples(); renderDict(); refresh();
+})();
+</script>

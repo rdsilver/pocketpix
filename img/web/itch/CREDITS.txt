@@ -1,0 +1,37 @@
+PocketPix (browser version): credits and licences
+==================================================
+
+PocketPix is a small text-to-picture model made to fit on a Game Boy Advance cartridge.
+This folder holds its browser version: index.html and the cartridge's model file in two halves
+(pix0.bin, pix1.bin). Everything runs in the browser; nothing is sent anywhere.
+The page uses no outside code, fonts or services.
+
+What the models were trained on
+-------------------------------
+* CommonCatalog, CC-BY subset (https://huggingface.co/datasets/common-canvas/commoncatalog-cc-by),
+  the photograph collection of the CommonCanvas project (Gokaslan et al., "CommonCanvas: An Open
+  Diffusion Model Trained with Creative-Commons Images", 2023). These are photographs their authors
+  published on Flickr under Creative Commons Attribution (CC BY) licences. They were read from a
+  512-pixel repackaging of that subset (data-archetype/commoncatalog_cc_by_3m_512 on Hugging Face).
+  Per-photo credits for these photographs are NOT included in this download: the author, licence
+  version and source page of every photograph are in the dataset's own records at the address above,
+  and they were not kept next to the shrunken training pictures.
+* Open Images V7 (https://storage.googleapis.com/openimages/web/index.html): close-up crops of
+  named things. The photographs are licensed CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/);
+  the object boxes used to cut the crops are by Google LLC, licensed CC BY 4.0
+  (https://creativecommons.org/licenses/by/4.0/).
+  The author and page of every Open Images photograph used are listed in credits-openimages.txt.
+
+How the photographs were used: each was cropped, shrunk to 64x64 pixels (and to 32x32 and 16x16) and
+reduced to a fixed palette of 256 colours before training. No photograph is included in this download;
+the model files hold only the trained numbers. The licensors do not endorse this project.
+
+Not affiliated
+--------------
+Game Boy Advance is a trademark of Nintendo. This is an unofficial hobby project and is not made or
+endorsed by Nintendo. No Nintendo code or data is included.
+
+Open Images credits: where an author's recorded name was an e-mail address, only the part before
+the @ is given.
+
+Cartridge times quoted on the page were measured in an emulator (mGBA), not yet on real hardware.

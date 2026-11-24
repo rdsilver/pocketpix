@@ -1,0 +1,14 @@
+{
+ "_comment": "THE ONE PLACE for cartridge timings shown and used for pacing by the web page (build.py injects this file). Seconds. Averages of measured mGBA runs after the overnight speed work (first pass 34.2 with a prompt / 28.4 without; enlargers averaged over three pictures). Real pictures range from about 1:20 to 2:00.",
+ "measured_in": "an emulator (mGBA), not yet on real hardware",
+ "pass_s": {
+  "first_with_prompt": 34.2,
+  "first_no_prompt": 28.4,
+  "to_32": 42.9,
+  "to_64": 33.5
+ },
+ "total_s": {
+  "with_prompt": 111,
+  "no_prompt": 105
+ }
+}

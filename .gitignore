@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Build outputs (the playable ROM, the cartridge model file and the 48 test pictures are kept)
+build/*
+!build/pocketpix.gba
+!build/pix.bin
+!build/pix_test48.u8
+
+# Browser build outputs (img/web/build.py); the zip is kept
+img/web/artifact/
+img/web/itch/index.html
+img/web/itch/pix0.bin
+img/web/itch/pix1.bin
+
+# Training data, runs, checkpoints and bundles
+img/data/
+img/runs/
+bundle/
+img/remote/*
+!img/remote/night/
+!img/remote/pal/
+*.ckpt
+ckpt.pt
+
+# Emulator saves and screenshots
+*.sav
+*.ppm
