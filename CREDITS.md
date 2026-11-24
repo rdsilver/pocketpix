@@ -12,8 +12,16 @@ The licensors do not endorse this project.
   Attribution (CC BY) licences. They were read from a 512-pixel repackaging of that subset
   (data-archetype/commoncatalog_cc_by_3m_512 on Hugging Face), whose captions were used to pick the prompt words
   (img/caps.py; the 4,096-entry word list is img/remote/night/words.json).
-  Per-photo credits for these photographs are not included: the author, licence version and source page of every
-  photograph are in the dataset's own records at the address above.
+  **Which photographs:** every photograph in the 240 shards of data-archetype/commoncatalog_cc_by_3m_512 listed in
+  [img/commoncatalog_shards.txt](img/commoncatalog_shards.txt), about 0.98 million in all.
+  **Who took them:** the authors are the Flickr users recorded for each photograph in CommonCatalog
+  (common-canvas/commoncatalog-cc-by, columns `unickname` for the author, `photoid` and `pageurl` for the photo page,
+  `licensename` and `licenseurl` for the licence; Flickr's "Attribution License" is CC BY 2.0). Each photograph's
+  name in the shards is the SHA-256 of its JPEG bytes in CommonCatalog, so a photograph's author can be looked up by
+  hashing CommonCatalog's `jpg` column, as the repackaging's own card describes.
+  A per-photograph list (author and photo page for each, like the Open Images list below) is not included yet:
+  building it means hashing about 21 TB of CommonCatalog's images, because no table from the repackaged names to
+  CommonCatalog's photo ids is published. It will be added here if such a table becomes available.
 * **Open Images V7** (https://storage.googleapis.com/openimages/web/index.html): close-up crops of named things
   (img/oi.py). The photographs are licensed CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/); the object
   boxes used to cut the crops are by Google LLC, licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).

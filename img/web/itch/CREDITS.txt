@@ -13,9 +13,13 @@ What the models were trained on
   Diffusion Model Trained with Creative-Commons Images", 2023). These are photographs their authors
   published on Flickr under Creative Commons Attribution (CC BY) licences. They were read from a
   512-pixel repackaging of that subset (data-archetype/commoncatalog_cc_by_3m_512 on Hugging Face).
-  Per-photo credits for these photographs are NOT included in this download: the author, licence
-  version and source page of every photograph are in the dataset's own records at the address above,
-  and they were not kept next to the shrunken training pictures.
+  Which photographs: every photograph in 240 shards of that repackaging (about 0.98 million); the
+  shards are listed in img/commoncatalog_shards.txt at https://github.com/rdsilver/pocketpix
+  Who took them: the Flickr users recorded for each photograph in CommonCatalog (columns unickname,
+  photoid, pageurl, licensename, licenseurl; Flickr's "Attribution License" is CC BY 2.0). A photo's
+  name in the shards is the SHA-256 of its JPEG bytes in CommonCatalog, which links the two.
+  A per-photograph list is not included yet: no table linking the two sets of names is published,
+  and building one means hashing about 21 TB of images. It will be added if such a table appears.
 * Open Images V7 (https://storage.googleapis.com/openimages/web/index.html): close-up crops of
   named things. The photographs are licensed CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/);
   the object boxes used to cut the crops are by Google LLC, licensed CC BY 4.0
